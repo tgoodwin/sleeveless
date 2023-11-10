@@ -26,4 +26,6 @@ simulation-based testing framework for kubernetes control plane components
     - paper that I wrote earlier this year with Andrew and Lindsey studying the Knative platform, which is a serverless platform built on top of Kubernetes. "Serverless" is a somewhat overloaded word these days, but I like to think of "serverless platforms" as platforms that are able to decouple computation from storage or networking resources such that the platform can manage these independently. By doing so, you can support "serverless functions" or services that only spin up when a request to them is made, and can go away when they aren't in use. To achieve this decoupling, your infrastructure has to have a lot of dynamic moving parts. Knative does this by implementing a variety of controller components that coordinate with eachother in complex ways. Of course, there have been bugs in the ways these controllers interact, and we talk more about them in this paper. These types of bugs are what we're trying to build a tool to detect!
 
 
-
+## Simulation
+[SimKube](https://github.com/acrlabs/simkube)
+[Where we’re going, we don’t need threads: Simulating Distributed Systems](https://blog.redplanetlabs.com/2021/03/17/where-were-going-we-dont-need-threads-simulating-distributed-systems/?utm_source=substack&utm_medium=email)
