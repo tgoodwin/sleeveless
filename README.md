@@ -1,7 +1,35 @@
 # sleeveless
 simulation-based testing framework for kubernetes control plane components
 
-## Background
+## Getting Started
+First install some tools.
+
+1. Install Kind (Kubernetes in Docker)
+    ```
+    brew install kind
+    ```
+    With Kind, you can do things like `kind create cluster` that will run a Kubernetes cluster in a collection of docker containers on your machine.
+
+2. K9s
+    ```
+    brew install derailed/k9s/k9s
+    ```
+    Great shell-based tool for managing clusters on your laptop.
+3. [Kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl)
+3. [Golang](https://go.dev/doc/install)
+4. Python3
+
+Next, let's install some prior art that we will be extending / modifying.
+
+Install Sieve:
+```
+git clone https://github.com/sieve-project/sieve.git
+cd sieve
+pip3 install -r requirements.txt
+```
+
+
+## Background Readings
 ### Concepts
 - [The Mechanics of Kubernetes](https://dominik-tornow.medium.com/the-mechanics-of-kubernetes-ac8112eaa302)
     - good high level overview of how kubernetes "works"
