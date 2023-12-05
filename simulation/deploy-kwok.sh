@@ -14,3 +14,10 @@ kubectl apply -f "https://github.com/${KWOK_REPO}/releases/download/${KWOK_LATES
 # set up default CRs of stages
 kubectl apply -f "https://github.com/${KWOK_REPO}/releases/download/${KWOK_LATEST_RELEASE}/stage-fast.yaml"
 
+# patch the kwok-controller to use the host network so that pods scheduled onto the virtual node(s) are
+# given IP ranges that match the IP ranges of pods that kind runs on cluster nodes. This step allows KWOK to play
+# nicely with Kind and the way Kind implements the kubernetes network model.
+kubectl patch deployment kwok-controller -n kube-system --patch '{"spec":{"template":{"spec":{"hostNetwork":true}}}}'
+
+# now, let's deploy a KWOK virutal node!
+kubectl apply -f nodes.yaml
