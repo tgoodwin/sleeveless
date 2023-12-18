@@ -57,3 +57,26 @@ kind get clusters | xargs -n 1 kind delete cluster --name
 kind create cluster --image <container_registry>/node:<image_tag>
 ```
 
+
+## example workflow
+try hacking on this file (the watch cache) by adding some print statements...
+```
+tgoodwin@cerulean:~/projects/sleeveless/fakegopath/src/k8s.io/kubernetes (siren) $ fd watch_cache.go
+staging/src/k8s.io/apiserver/pkg/storage/cacher/watch_cache.go
+tgoodwin@cerulean:~/projects/sleeveless/fakegopath/src/k8s.io/kubernetes (siren) $
+```
+
+Then, build your locally modified version of Kubernetes using the steps above.
+Once you've pushed the image and booted a Kind cluster using the image, check the logs coming from the pod that runs the code you modified.
+In this example, it'd be the API server pod. So, to see its logs...
+
+1. quickly verify that the cluster components are running as expected
+```bash
+kubectl get pods --namespace kube-system
+```
+
+2. get the logs from the API server pod
+```bash
+kubectl logs kube-apiserver-kind-control-plane --namespace kube-system -f
+```
+
