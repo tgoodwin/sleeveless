@@ -4,19 +4,19 @@
 1. Download Kubernetes
 ```bash
 mkdir -p fakegopath/src/k8s.io
-
+K8S_VERSION="v1.28.0"
 git clone --single-branch --branch $K8S_VERSION https://github.com/kubernetes/kubernetes/git fakegopath/src/k8s.io/kubernetes >> /dev/null
 ```
 
-2. (Optional) install custom lib for kubernetes
+2. (Optional) install our custom instrumentation dependencies in K8s source
+Skip for now!
 TODO: when we have custom golang modules, use this step to modify the k8s `go.mod` file(s)
 so our code can be incorporated as a dependency when building kubernetes in step 4.
-```bash
-APISERVER_MOD_FILE="fakegopath/src/k8s.io/kubernetes/staging/src/k8s.io/apiserver/go.mod"
 
-```
+For now, we'll just hack on the K8s source locally, tracking our modifications on a git branch perhaps.
 
-3. (future step) instrument kubernetes
+3. (Future step) instrument kubernetes
+Skip for now!
 Eventually we may have a script to modify fresh kubernetes source code with our changes.
 ```bash
 # go mod tidy
@@ -25,19 +25,35 @@ Eventually we may have a script to modify fresh kubernetes source code with our 
 ```
 
 4. Build kubernetes source into a Kind node image
+This step takes a minute or two.
 ```bash
+ORIG_DIR=$(pwd)
 cd fakegopath/src/k8s.io/kubernetes
 
-GOPATH=$/fakegopath KUBE_GIT_VERSION=siren-${K8S_VERSION} kind build node-image
-cd -
+GOPATH=$ORIG_DIR/fakegopath KUBE_GIT_VERSION=siren-${K8S_VERSION} kind build node-image
+```
+
+After a successful build, you should see output like
+```
+Image "kindest/node:latest" build completed.
+```
+Next, we'll tag the image we just built with something we can reference.
+
+```bash
 docker image tag kindest/node:latest <container_registry>/node:<image_tag>
 
-# push to registry
+# and then push it to a registry where Kind can find it
+# and <container_registry> can be something like docker.io/tlg2132 (this is my docker username)
 docker push <container_registry>/node:<image_tag>
 ```
 
 5. Running modified Kubernetes in a Kind cluster locally
+Here we tell Kind to find a Kubernetes container image at the location we just pushed to.
 ```bash
+# clean up any kind cluster(s) that may already exist
+# this command allows you to not remember what the cluster is called - it'll just delete whatever's there.
+kind get clusters | xargs -n 1 kind delete cluster --name 
+
 kind create cluster --image <container_registry>/node:<image_tag>
 ```
 
