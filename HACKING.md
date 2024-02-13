@@ -1,6 +1,41 @@
-# TODO
+# Getting Started
 
-## Building Kubernetes
+### Hacking on Kubernetes Clients
+Lets say we have some controller (e.g. Zookeeper Operator) and we want to hack on its behavior and how it interacts with the Kubernetes API.
+1. Download the controller source code
+```
+git clone https://github.com/your-controller
+```
+
+2. Figure out how the controller interacts with Kubernetes (probably client-go, controller-runtime, or both).
+
+3. Clone additional dependencies you need to hack on
+
+4. In the controller's source repo, there will be a `go.mod` file which tells Go which dependencies the controller needs, and which versions of those dependencies to use. Get the controller to use our modified versions of these dependencies by adding following "replace" statements to the `go.mod` file. For example, assume we want to hack on `controller-runtime` and have the zookeeper-operator controller use this hacked version.
+
+In the zookeeper-operator's `go.mod` file, find the line for controller runtime, and make note of the version being used. At the bottom of the file, add the following:
+```
+replace sigs.k8s.io/controller-runtime => /path/to/your/controller-runtime
+```
+and then also be sure to check out your `/path/to/your/controller-runtime` to the correct version by doing, for example, `git checkout v0.15.2`. The value for the branch name can be the version you find in the `go.mod` file.
+
+5. Build your controller to pull in your custom changes.
+NOTE: if producing a docker image, you will likely need to modify the `Dockerfile` to `COPY` in your local copy of controller-runtime (or any other dependencies you modify) so that they are available in the container's filesystem during the build process. This may also mean that you need to move your local copy to a location that is a child of the controller's root level directory.
+
+For example, when hacking on `zookeeper-operator` I created a `/custom` folder in the zookeeper-operator repo and moved my copies of `controller-runtime` and `client-go` in there. Then, I added the following line to the `Dockerfile`:
+```
+# custom tim stuff
+COPY custom/ custom/
+```
+6. Build and push your image.
+
+7. Modify the K8s manifest for this controller
+- update the image location and name (e.g. `docker.io/your-docker-username/your-controller:your-tag)
+- probably want to set `imagePullPolicy: Always`
+
+8. Repeat! That's the hacking dev loop
+
+### Hacking on Kubernetes Source
 1. Download Kubernetes
 ```bash
 mkdir -p fakegopath/src/k8s.io
@@ -52,13 +87,13 @@ Here we tell Kind to find a Kubernetes container image at the location we just p
 ```bash
 # clean up any kind cluster(s) that may already exist
 # this command allows you to not remember what the cluster is called - it'll just delete whatever's there.
-kind get clusters | xargs -n 1 kind delete cluster --name 
+kind get clusters | xargs -n 1 kind delete cluster --name
 
 kind create cluster --image <container_registry>/node:<image_tag>
 ```
 
 
-## example workflow
+#### example workflow
 try hacking on this file (the watch cache) by adding some print statements...
 ```
 tgoodwin@cerulean:~/projects/sleeveless/fakegopath/src/k8s.io/kubernetes (siren) $ fd watch_cache.go

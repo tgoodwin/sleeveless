@@ -18,7 +18,7 @@ spec:
       containers:
         - name: zookeeper-operator
           # built against commit cda03d2f270bdfb51372192766123904f6d88278
-          image: docker.io/tlg2132/zookeeper-operator:latest
+          image: docker.io/tlg2132/zookeeper-operator:sleeveless
           ports:
           - containerPort: 60000
             name: metrics
