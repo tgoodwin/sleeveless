@@ -1,0 +1,53 @@
+#!/usr/bin/env -S kubectl apply -f
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    meta.helm.sh/release-name: tempo
+    meta.helm.sh/release-namespace: default
+  labels:
+    app.kubernetes.io/component: distributor
+    app.kubernetes.io/instance: tempo
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: tempo
+    app.kubernetes.io/version: 2.3.1
+    helm.sh/chart: tempo-distributed-1.8.3
+  name: tempo-distributor
+  namespace: default
+spec:
+  clusterIP: 10.233.0.4
+  clusterIPs:
+  - 10.233.0.4
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+  - name: http-metrics
+    port: 3100
+    protocol: TCP
+    targetPort: http-metrics
+  - name: grpc
+    port: 9095
+    protocol: TCP
+    targetPort: 9095
+  - name: distributor-otlp-http
+    port: 4318
+    protocol: TCP
+    targetPort: otlp-http
+  - name: grpc-distributor-otlp
+    port: 4317
+    protocol: TCP
+    targetPort: grpc-otlp
+  - name: distributor-otlp-legacy
+    port: 55680
+    protocol: TCP
+    targetPort: grpc-otlp
+  selector:
+    app.kubernetes.io/component: distributor
+    app.kubernetes.io/instance: tempo
+    app.kubernetes.io/name: tempo
+  type: ClusterIP
+status:
+  loadBalancer: {}

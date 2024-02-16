@@ -1,0 +1,2 @@
+#!/usr/bin/env -S helm upgrade --install --create-namespace --namespace=longhorn-system longhorn longhorn/longhorn --version=1.6.0 -f
+---
