@@ -1,0 +1,53 @@
+all:
+  hosts:
+    node0.tracing-k8s.dvm-pg0.utah.cloudlab.us:
+      ip: 10.10.1.1
+      access_ip: 10.10.1.1
+    node1.tracing-k8s.dvm-pg0.utah.cloudlab.us:
+      ip: 10.10.1.2
+      access_ip: 10.10.1.2
+    node2.tracing-k8s.dvm-pg0.utah.cloudlab.us:
+      ip: 10.10.1.3
+      access_ip: 10.10.1.3
+    node3.tracing-k8s.dvm-pg0.utah.cloudlab.us:
+      ip: 10.10.1.4
+      access_ip: 10.10.1.4
+    node4.tracing-k8s.dvm-pg0.utah.cloudlab.us:
+      ip: 10.10.1.5
+      access_ip: 10.10.1.5
+    node5.tracing-k8s.dvm-pg0.utah.cloudlab.us:
+      ip: 10.10.1.6
+      access_ip: 10.10.1.6
+    node6.tracing-k8s.dvm-pg0.utah.cloudlab.us:
+      ip: 10.10.1.7
+      access_ip: 10.10.1.7
+    node7.tracing-k8s.dvm-pg0.utah.cloudlab.us:
+      ip: 10.10.1.8
+      access_ip: 10.10.1.8
+  children:
+    kube_control_plane:
+      hosts:
+        node0.tracing-k8s.dvm-pg0.utah.cloudlab.us:
+        node1.tracing-k8s.dvm-pg0.utah.cloudlab.us:
+        node2.tracing-k8s.dvm-pg0.utah.cloudlab.us:
+    kube_node:
+      hosts:
+        node0.tracing-k8s.dvm-pg0.utah.cloudlab.us:
+        node1.tracing-k8s.dvm-pg0.utah.cloudlab.us:
+        node2.tracing-k8s.dvm-pg0.utah.cloudlab.us:
+        node3.tracing-k8s.dvm-pg0.utah.cloudlab.us:
+        node4.tracing-k8s.dvm-pg0.utah.cloudlab.us:
+        node5.tracing-k8s.dvm-pg0.utah.cloudlab.us:
+        node6.tracing-k8s.dvm-pg0.utah.cloudlab.us:
+        node7.tracing-k8s.dvm-pg0.utah.cloudlab.us:
+    etcd:
+      hosts:
+        node0.tracing-k8s.dvm-pg0.utah.cloudlab.us:
+        node1.tracing-k8s.dvm-pg0.utah.cloudlab.us:
+        node2.tracing-k8s.dvm-pg0.utah.cloudlab.us:
+    k8s_cluster:
+      children:
+        kube_control_plane:
+        kube_node:
+    calico_rr:
+      hosts: {}
