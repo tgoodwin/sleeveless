@@ -4,7 +4,7 @@ metadata:
   labels:
     acme.com/lifespan-requested: "7"
   name: lifespan-seven
-  namespace: apps
+  namespace: tracey
 spec:
   containers:
     - args:
