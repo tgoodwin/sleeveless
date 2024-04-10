@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/slackhq/simple-kubernetes-webhook/pkg/admission"
 	admissionv1 "k8s.io/api/admission/v1"
@@ -78,7 +79,9 @@ func ServeTagResource(w http.ResponseWriter, r *http.Request) {
 	} else {
 		labels = wl.Labels
 	}
-	labels["tracey-uid"] = "TRACEY"
+
+	// set the top-level label. that's all we do here.
+	labels["tracey-uid"] = uuid.New().String()
 
 	patches := []patchOperation{
 		{
@@ -116,8 +119,6 @@ func ServeTagResource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// logger.Debug("sending response")
-	// logger.Debugf("%s", jout)
 	fmt.Fprintf(w, "%s", jout)
 
 }

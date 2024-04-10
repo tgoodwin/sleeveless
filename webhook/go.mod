@@ -4,6 +4,7 @@ go 1.16
 
 require (
 	github.com/google/go-cmp v0.5.5 // indirect
+	github.com/google/uuid v1.6.0 // indirect
 	github.com/sirupsen/logrus v1.8.1
 	github.com/stretchr/testify v1.6.1
 	github.com/wI2L/jsondiff v0.1.0
