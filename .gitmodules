@@ -1,0 +1,6 @@
+[submodule "custom/controller-runtime"]
+	path = custom/controller-runtime
+	url = https://github.com/tgoodwin/controller-runtime
+[submodule "custom/client-go"]
+	path = custom/client-go
+	url = https://github.com/tgoodwin/client-go
