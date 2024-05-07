@@ -1,4 +1,4 @@
-package main
+package client
 
 import (
 	"context"
@@ -11,10 +11,14 @@ type Client struct {
 	client.Client
 }
 
-func NewClient(wrapped client.Client) client.Client {
+func newClient(wrapped client.Client) client.Client {
 	return &Client{
 		Client: wrapped,
 	}
+}
+
+func Wrap(c client.Client) client.Client {
+	return newClient(c)
 }
 
 func (c *Client) Create(ctx context.Context, obj client.Object, opts ...client.CreateOption) error {
