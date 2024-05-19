@@ -67,7 +67,7 @@ func (c *Client) StartReconcileContext() func() {
 
 func (c *Client) logObservation(ov ObjectVersion, msg string) {
 	c.logger.WithValues(
-		"Timestamp", time.Now().Format("2006-01-02 15:04:05"),
+		"Timestamp", fmt.Sprintf("%d", time.Now().UnixNano()/int64(time.Millisecond)),
 		"ReconcileID", c.reconcileID,
 		"Observation", fmt.Sprintf("%+v", ov),
 	).Info(msg)
