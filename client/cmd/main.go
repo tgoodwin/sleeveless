@@ -9,22 +9,6 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-// func (o *Observation) Hash() string {
-// 	// serialize the objects map
-// 	b := new(bytes.Buffer)
-// 	e := json.NewEncoder(b)
-// 	err := e.Encode(o.objects)
-// 	if err != nil {
-// 		panic(err)
-// 	}
-
-// 	var h maphash.Hash
-// 	defer h.Reset()
-// 	h.Write(b.Bytes())
-
-// 	return fmt.Sprint(h.Sum64())
-// }
-
 func main() {
 	// initialize a kubernets client
 	localConfig, err := clientcmd.BuildConfigFromFlags("", "/Users/tgoodwin/.kube/config")
