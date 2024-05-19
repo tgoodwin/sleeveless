@@ -30,7 +30,7 @@ COPY custom/ custom/
 6. Build and push your image.
 
 7. Modify the K8s manifest for this controller
-- update the image location and name (e.g. `docker.io/your-docker-username/your-controller:your-tag)
+- update the image location and name (e.g. `docker.io/your-docker-username/your-controller:your-tag)`
 - probably want to set `imagePullPolicy: Always`
 
 8. Repeat! That's the hacking dev loop
