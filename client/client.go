@@ -60,7 +60,11 @@ func Wrap(c client.Client) client.Client {
 func (c *Client) StartReconcileContext() func() {
 	c.reconcileID = createFixedLengthHash()
 	return func() {
-		c.logger.Info("Reconcile context ended", "ReconcileID", c.reconcileID)
+		c.logger.WithValues(
+			"ReconcileID", c.reconcileID,
+			"Timestamp", fmt.Sprintf("%d", time.Now().UnixNano()/int64(time.Millisecond)),
+		).Info("Reconcile context ended")
+
 		c.reconcileID = ""
 	}
 }
@@ -69,7 +73,10 @@ func (c *Client) logObservation(ov ObjectVersion, msg string) {
 	c.logger.WithValues(
 		"Timestamp", fmt.Sprintf("%d", time.Now().UnixNano()/int64(time.Millisecond)),
 		"ReconcileID", c.reconcileID,
-		"Observation", fmt.Sprintf("%+v", ov),
+		"ObservedObjectKind", fmt.Sprintf("%+v", ov.Kind),
+		"ObservedObjectUID", fmt.Sprintf("%+v", ov.Uid),
+		"ObservedObjectVersion", fmt.Sprintf("%+v", ov.Version),
+		"ObservationTraceID", fmt.Sprintf("%+v", ov.TraceID),
 	).Info(msg)
 }
 
@@ -98,7 +105,6 @@ func (c *Client) Get(ctx context.Context, key client.ObjectKey, obj client.Objec
 }
 
 func (c *Client) List(ctx context.Context, list client.ObjectList, opts ...client.ListOption) error {
-	fmt.Println("sleeveless LIST")
 	return c.Client.List(ctx, list, opts...)
 }
 
