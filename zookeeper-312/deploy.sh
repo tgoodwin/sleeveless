@@ -1,7 +1,7 @@
 #!/bin/bash
 set -x
 
-NAMESPACE=default
+NAMESPACE=tracey
 
 kubectl create --namespace $NAMESPACE -f crds
 kubectl create --namespace $NAMESPACE -f default_ns/rbac.yaml

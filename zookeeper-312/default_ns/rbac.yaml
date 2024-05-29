@@ -6,7 +6,7 @@ metadata:
 ---
 
 kind: Role
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: zookeeper-operator
 rules:
@@ -45,13 +45,14 @@ rules:
   - "*"
 ---
 kind: RoleBinding
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: zookeeper-operator
+  namespace: tracey
 subjects:
 - kind: ServiceAccount
   name: zookeeper-operator
-  namespace: default
+  namespace: tracey
 roleRef:
   kind: Role
   name: zookeeper-operator
