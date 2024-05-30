@@ -15,6 +15,18 @@ import (
 
 var log = logf.Log.WithName("sleeveless")
 
+// enum for controller operation types
+type OperationType string
+
+var (
+	GET    OperationType = "GET"
+	LIST   OperationType = "LIST"
+	CREATE OperationType = "CREATE"
+	UPDATE OperationType = "UPDATE"
+	DELETE OperationType = "DELETE"
+	PATCH  OperationType = "PATCH"
+)
+
 func createFixedLengthHash() string {
 	// Get the current time
 	currentTime := time.Now()
@@ -40,8 +52,14 @@ type Client struct {
 	// below, we will override some of these methods to add our own behavior.
 	client.Client
 
+	// identifier for the reconciler (controller name)
+	id string
+
 	// used to scope observations to a given Reconcile invocation
 	reconcileID string
+
+	// root event ID
+	rootID string
 
 	logger logr.Logger
 
@@ -51,63 +69,93 @@ type Client struct {
 
 var _ client.Client = &Client{}
 
-func newClient(wrapped client.Client) client.Client {
+func newClient(wrapped client.Client) *Client {
 	return &Client{
 		Client: wrapped,
 		logger: log,
 	}
 }
 
-func Wrap(c client.Client) client.Client {
+func Wrap(c client.Client) *Client {
 	return newClient(c)
+}
+
+func (c *Client) WithName(name string) *Client {
+	c.id = name
+	return c
 }
 
 func (c *Client) StartReconcileContext() func() {
 	if c.reconcileID != "" {
+		// unsure if this should never happen or not.
+		// if it does, then we should store reconcileIDs on the client struct as a map
 		panic("concurrent reconcile invocations detected")
 	}
+	// set a reconcileID for this invocation
 	c.reconcileID = createFixedLengthHash()
 	return func() {
 		c.logger.WithValues(
 			"ReconcileID", c.reconcileID,
-			"Timestamp", fmt.Sprintf("%d", time.Now().UnixNano()/int64(time.Millisecond)),
+			"TimestampNS", fmt.Sprintf("%d", time.Now().UnixNano()),
 		).Info("Reconcile context ended")
 
+		// reset temporary state
 		c.reconcileID = ""
+		c.rootID = ""
 	}
 }
 
-func (c *Client) logObservation(ov ObjectVersion, msg string) {
+func (c *Client) logObservation(ov ObjectVersion, op OperationType, msg string) {
 	c.logger.WithValues(
 		"Timestamp", fmt.Sprintf("%d", time.Now().UnixNano()/int64(time.Millisecond)),
 		"ReconcileID", c.reconcileID,
+		"CreatorID", c.id,
+		"RootEventID", c.rootID,
+		"OperationType", fmt.Sprintf("%v", op),
 		"ObservedObjectKind", fmt.Sprintf("%+v", ov.Kind),
 		"ObservedObjectUID", fmt.Sprintf("%+v", ov.Uid),
 		"ObservedObjectVersion", fmt.Sprintf("%+v", ov.Version),
-		"ObservationTraceID", fmt.Sprintf("%+v", ov.TraceID),
 	).Info(msg)
 }
 
-func (c *Client) setLabelContext(obj client.Object) {
+func (c *Client) setRootContext(obj client.Object) {
 	labels := obj.GetLabels()
-	rootID, ok := labels[TRACEY_ROOT_ID]
-	c.lc.SourceObject = string(obj.GetUID())
+	rootID, ok := labels[TRACEY_WEBHOOK_LABEL]
 	if !ok {
 		return
 	}
-	c.lc.RootID = rootID
-	if _, ok := labels[TRACEY_PARENT_ID]; !ok {
-		c.lc.ParentID = rootID
+	if c.rootID != "" && c.rootID != rootID {
+		c.logger.WithValues(
+			"RootID", c.rootID,
+			"NewRootID", rootID,
+		).Error(nil, "Root context changed")
 	}
-	if traceID, ok := labels[TRACEY_LABEL_ID]; ok {
-		c.lc.TraceID = traceID
-	}
+	c.rootID = rootID
 	c.logger.WithValues(
-		"RootID", c.lc.RootID,
-		"ParentID", c.lc.ParentID,
-		"TraceID", c.lc.TraceID,
-	).Info("Label context set")
+		"RootID", c.rootID,
+	).Info("Root context set")
 }
+
+// func (c *Client) setLabelContext(obj client.Object) {
+// 	labels := obj.GetLabels()
+// 	rootID, ok := labels[TRACEY_WEBHOOK_LABEL]
+// 	c.lc.SourceObject = string(obj.GetUID())
+// 	if !ok {
+// 		return
+// 	}
+// 	c.lc.RootID = rootID
+// 	if _, ok := labels[TRACEY_PARENT_ID]; !ok {
+// 		c.lc.ParentID = rootID
+// 	}
+// 	if traceID, ok := labels[TRACEY_RECONCILE_ID]; ok {
+// 		c.lc.TraceID = traceID
+// 	}
+// 	c.logger.WithValues(
+// 		"RootID", c.lc.RootID,
+// 		"ParentID", c.lc.ParentID,
+// 		"TraceID", c.lc.TraceID,
+// 	).Info("Label context set")
+// }
 
 func (c *Client) propagateLabels(obj client.Object) {
 	currLabels := obj.GetLabels()
@@ -115,58 +163,51 @@ func (c *Client) propagateLabels(obj client.Object) {
 	for k, v := range currLabels {
 		out[k] = v
 	}
-	out[TRACEY_PARENT_ID] = c.lc.TraceID
-	out[TRACEY_LABEL_ID] = createFixedLengthHash()
+	out[TRACEY_CREATOR_ID] = c.id
+	out[TRACEY_ROOT_ID] = c.rootID
+	out[TRACEY_RECONCILE_ID] = c.reconcileID
+
 	c.logger.WithValues(
-		"RootID", c.lc.RootID,
-		"ParentID", c.lc.ParentID,
-		"TraceID", c.lc.TraceID,
-		"SourceObject", c.lc.SourceObject,
-		"DestObject", obj.GetUID(),
+		"RootID", c.rootID,
+		"ReconcileID", c.reconcileID,
+		"ObjectUID", obj.GetUID(),
 	).Info("Propagating labels")
-	pre := obj.GetLabels()
 	obj.SetLabels(out)
-	post := obj.GetLabels()
-	c.logger.WithValues(
-		"PreLabel", pre,
-		"PostLabel", post,
-	).Info("Labels propagated")
 }
 
 func (c *Client) Create(ctx context.Context, obj client.Object, opts ...client.CreateOption) error {
 	c.propagateLabels(obj)
 	res := c.Client.Create(ctx, obj, opts...)
-	c.logObservation(RecordSingle(obj), "CREATE")
+	c.logObservation(RecordSingle(obj), CREATE, "CREATE")
 	return res
 
 }
 
 func (c *Client) Delete(ctx context.Context, obj client.Object, opts ...client.DeleteOption) error {
-	// need to record the knowledge snapshot this delete is based on
 	c.propagateLabels(obj)
 	res := c.Client.Delete(ctx, obj, opts...)
-	c.logObservation(RecordSingle(obj), "DELETE")
+	c.logObservation(RecordSingle(obj), DELETE, "DELETE")
 	return res
 }
 
 func (c *Client) Get(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
 	res := c.Client.Get(ctx, key, obj, opts...)
-	// after the read, set the label context for the next operation
-	c.setLabelContext(obj)
-	// and then record a knowledge snapshot
-	c.logObservation(RecordSingle(obj), "GET")
+	c.setRootContext(obj)
+	c.logObservation(RecordSingle(obj), GET, "GET")
 	return res
 }
 
 func (c *Client) List(ctx context.Context, list client.ObjectList, opts ...client.ListOption) error {
+	// TODO log observation for each item in the list
+	// this is hard cause we don't have access to list.Items without knowing the concrete type
+	// so we may have to re-implement below the controller-runtime level to be able to do this.
 	return c.Client.List(ctx, list, opts...)
 }
 
 func (c *Client) Update(ctx context.Context, obj client.Object, opts ...client.UpdateOption) error {
 	// need to record the knowledge snapshot this update is based on
 	c.propagateLabels(obj)
-	ov := RecordSingle(obj)
-	c.logObservation(ov, "UPDATE")
+	c.logObservation(RecordSingle(obj), UPDATE, "UPDATE")
 	res := c.Client.Update(ctx, obj, opts...)
 	return res
 }
@@ -175,7 +216,6 @@ func (c *Client) Patch(ctx context.Context, obj client.Object, patch client.Patc
 	// TODO verify labels propagate correctly under patch
 	c.propagateLabels(obj)
 	res := c.Client.Patch(ctx, obj, patch, opts...)
-	ov := RecordSingle(obj)
-	c.logObservation(ov, "PATCH")
+	c.logObservation(RecordSingle(obj), PATCH, "PATCH")
 	return res
 }
