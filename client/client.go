@@ -62,9 +62,6 @@ type Client struct {
 	rootID string
 
 	logger logr.Logger
-
-	// used for causality propagation -- which objects caused the creation of which objects
-	lc LabelContext
 }
 
 var _ client.Client = &Client{}
@@ -93,6 +90,10 @@ func (c *Client) StartReconcileContext() func() {
 	}
 	// set a reconcileID for this invocation
 	c.reconcileID = createFixedLengthHash()
+	c.logger.WithValues(
+		"ReconcileID", c.reconcileID,
+		"TimestampNS", fmt.Sprintf("%d", time.Now().UnixNano()),
+	).Info("Reconcile context started")
 	return func() {
 		c.logger.WithValues(
 			"ReconcileID", c.reconcileID,
@@ -105,7 +106,7 @@ func (c *Client) StartReconcileContext() func() {
 	}
 }
 
-func (c *Client) logObservation(ov ObjectVersion, op OperationType, msg string) {
+func (c *Client) logObservation(ov ObjectVersion, op OperationType) {
 	c.logger.WithValues(
 		"Timestamp", fmt.Sprintf("%d", time.Now().UnixNano()/int64(time.Millisecond)),
 		"ReconcileID", c.reconcileID,
@@ -115,7 +116,7 @@ func (c *Client) logObservation(ov ObjectVersion, op OperationType, msg string) 
 		"ObservedObjectKind", fmt.Sprintf("%+v", ov.Kind),
 		"ObservedObjectUID", fmt.Sprintf("%+v", ov.Uid),
 		"ObservedObjectVersion", fmt.Sprintf("%+v", ov.Version),
-	).Info(msg)
+	).Info("log-observation")
 }
 
 func (c *Client) setRootContext(obj client.Object) {
@@ -133,6 +134,8 @@ func (c *Client) setRootContext(obj client.Object) {
 	c.rootID = rootID
 	c.logger.WithValues(
 		"RootID", c.rootID,
+		"ObjectKind", obj.GetObjectKind().GroupVersionKind().String(),
+		"ObjectUID", obj.GetUID(),
 	).Info("Root context set")
 }
 
@@ -178,7 +181,7 @@ func (c *Client) propagateLabels(obj client.Object) {
 func (c *Client) Create(ctx context.Context, obj client.Object, opts ...client.CreateOption) error {
 	c.propagateLabels(obj)
 	res := c.Client.Create(ctx, obj, opts...)
-	c.logObservation(RecordSingle(obj), CREATE, "CREATE")
+	c.logObservation(RecordSingle(obj), CREATE)
 	return res
 
 }
@@ -186,14 +189,14 @@ func (c *Client) Create(ctx context.Context, obj client.Object, opts ...client.C
 func (c *Client) Delete(ctx context.Context, obj client.Object, opts ...client.DeleteOption) error {
 	c.propagateLabels(obj)
 	res := c.Client.Delete(ctx, obj, opts...)
-	c.logObservation(RecordSingle(obj), DELETE, "DELETE")
+	c.logObservation(RecordSingle(obj), DELETE)
 	return res
 }
 
 func (c *Client) Get(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
 	res := c.Client.Get(ctx, key, obj, opts...)
 	c.setRootContext(obj)
-	c.logObservation(RecordSingle(obj), GET, "GET")
+	c.logObservation(RecordSingle(obj), GET)
 	return res
 }
 
@@ -207,7 +210,7 @@ func (c *Client) List(ctx context.Context, list client.ObjectList, opts ...clien
 func (c *Client) Update(ctx context.Context, obj client.Object, opts ...client.UpdateOption) error {
 	// need to record the knowledge snapshot this update is based on
 	c.propagateLabels(obj)
-	c.logObservation(RecordSingle(obj), UPDATE, "UPDATE")
+	c.logObservation(RecordSingle(obj), UPDATE)
 	res := c.Client.Update(ctx, obj, opts...)
 	return res
 }
@@ -216,6 +219,6 @@ func (c *Client) Patch(ctx context.Context, obj client.Object, patch client.Patc
 	// TODO verify labels propagate correctly under patch
 	c.propagateLabels(obj)
 	res := c.Client.Patch(ctx, obj, patch, opts...)
-	c.logObservation(RecordSingle(obj), PATCH, "PATCH")
+	c.logObservation(RecordSingle(obj), PATCH)
 	return res
 }
