@@ -14,6 +14,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// TODO dedupe and import this
+var TRACEY_ROOT_ID = "discrete.events/root-event-id"
+
 func main() {
 	setLogger()
 
@@ -80,8 +83,11 @@ func ServeTagResource(w http.ResponseWriter, r *http.Request) {
 		labels = wl.Labels
 	}
 
-	// set the top-level label. that's all we do here.
-	labels["tracey-uid"] = uuid.New().String()
+	// only label the object if it doesn't already have a propagated root label
+	if _, ok := labels[TRACEY_ROOT_ID]; !ok {
+		// set the top-level label. that's all we do here.
+		labels["tracey-uid"] = uuid.New().String()
+	}
 
 	patches := []patchOperation{
 		{
