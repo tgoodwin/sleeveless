@@ -11,6 +11,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/slackhq/simple-kubernetes-webhook/pkg/admission"
 	admissionv1 "k8s.io/api/admission/v1"
+	v1 "k8s.io/api/admission/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -55,6 +56,12 @@ type withlabels struct {
 	metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
 }
 
+func cameFromTheOutside(in *v1.AdmissionReview) bool {
+	return in.Request.UserInfo.Username == KUBECTL_USERNAME
+}
+
+var KUBECTL_USERNAME = "kubernetes-admin"
+
 func ServeTagResource(w http.ResponseWriter, r *http.Request) {
 	in, err := parseRequest(*r)
 	logger := logrus.WithField("resource", in.Request.RequestResource)
@@ -63,6 +70,7 @@ func ServeTagResource(w http.ResponseWriter, r *http.Request) {
 		"subResource":     in.Request.SubResource,
 		"requestKind":     in.Request.RequestKind,
 		"requestResource": in.Request.RequestResource,
+		"user":            in.Request.UserInfo.Username,
 	}).Debug("received tag resource request")
 
 	if err != nil {
@@ -84,9 +92,11 @@ func ServeTagResource(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// only label the object if it doesn't already have a propagated root label
-	if _, ok := labels[TRACEY_ROOT_ID]; !ok {
+	if cameFromTheOutside(in) {
+		// if _, ok := labels[TRACEY_ROOT_ID]; !ok {
 		// set the top-level label. that's all we do here.
 		labels["tracey-uid"] = uuid.New().String()
+		// }
 	}
 
 	patches := []patchOperation{
