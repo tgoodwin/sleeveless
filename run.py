@@ -36,21 +36,21 @@ def tail_logs(tail_command, log_file):
 def workload():
     execute_shell_prompt('kubectl apply -f zookeeper-312/zkc-1.yaml')
     time.sleep(5)
-    execute_shell_prompt('kubectl wait --for=condition=Ready pod/zookeeper-cluster-0 --timeout=60s -n default')
+    execute_shell_prompt('kubectl wait --for=condition=Ready pod/zookeeper-cluster-0 --timeout=60s -n tracey')
     execute_shell_prompt('kubectl delete -f zookeeper-312/zkc-1.yaml')
-    execute_shell_prompt('kubectl wait --for=delete pod/zookeeper-cluster-0 --timeout=60s -n default')
+    execute_shell_prompt('kubectl wait --for=delete pod/zookeeper-cluster-0 --timeout=60s -n tracey')
     execute_shell_prompt('kubectl apply -f zookeeper-312/zkc-1.yaml')
     time.sleep(5)
-    execute_shell_prompt('kubectl wait --for=condition=Ready pod/zookeeper-cluster-0 --timeout=60s -n default')
+    execute_shell_prompt('kubectl wait --for=condition=Ready pod/zookeeper-cluster-0 --timeout=60s -n tracey')
 
 
 def main():
     print(execute_shell_prompt('ls -l'))
 
-    for i in range(3):
+    for i in range(1):
         print("running iteration: {}".format(i))
         # tail and follow any future logs
-        quit_tail = tail_logs('kubectl logs deployment/zookeeper-operator -n default --tail=0 -f', 'out-{}.json'.format(i))
+        quit_tail = tail_logs('kubectl logs deployment/zookeeper-operator -n tracey --tail=0 -f', 'out-{}.json'.format(i))
         workload()
         print("done")
         quit_tail()
