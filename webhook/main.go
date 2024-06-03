@@ -11,7 +11,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/slackhq/simple-kubernetes-webhook/pkg/admission"
 	admissionv1 "k8s.io/api/admission/v1"
-	v1 "k8s.io/api/admission/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -56,7 +55,7 @@ type withlabels struct {
 	metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
 }
 
-func cameFromTheOutside(in *v1.AdmissionReview) bool {
+func cameFromTheOutside(in *admissionv1.AdmissionReview) bool {
 	return in.Request.UserInfo.Username == KUBECTL_USERNAME
 }
 
