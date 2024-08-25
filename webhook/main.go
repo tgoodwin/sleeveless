@@ -10,12 +10,12 @@ import (
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/slackhq/simple-kubernetes-webhook/pkg/admission"
+
+	// TODO this is imported as client. rename it to sleeve at the source.
+	sleevetag "github.com/tgoodwin/sleeve/tag"
 	admissionv1 "k8s.io/api/admission/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
-
-// TODO dedupe and import this
-var TRACEY_ROOT_ID = "discrete.events/root-event-id"
 
 func main() {
 	setLogger()
@@ -90,12 +90,16 @@ func ServeTagResource(w http.ResponseWriter, r *http.Request) {
 		labels = wl.Labels
 	}
 
+	notTaggedYet := func() bool {
+		_, hasWebhookTag := labels[sleevetag.TRACEY_WEBHOOK_LABEL]
+		_, hasPropagatedTag := labels[sleevetag.TRACEY_ROOT_ID]
+		return !hasWebhookTag && !hasPropagatedTag
+	}
+
 	// only label the object if it doesn't already have a propagated root label
-	if cameFromTheOutside(in) {
-		// if _, ok := labels[TRACEY_ROOT_ID]; !ok {
+	if cameFromTheOutside(in) && notTaggedYet() {
 		// set the top-level label. that's all we do here.
-		labels["tracey-uid"] = uuid.New().String()
-		// }
+		labels[sleevetag.TRACEY_WEBHOOK_LABEL] = uuid.New().String()
 	}
 
 	patches := []patchOperation{
